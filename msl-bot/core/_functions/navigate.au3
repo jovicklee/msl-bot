@@ -24,29 +24,39 @@ Func navigate($strMainLocation, $strLocation = "", $forceGiveUp = False)
 		Switch $strLocation
 			;village
 			Case "shop"
-				If isArray(findImage("misc-village-pos1", 50)) Then
-					clickUntil(StringSplit($village_coorHourly[0], "|", 2)[3], "shop")
-				ElseIf isArray(findImage("misc-village-pos2", 50)) Then
-					clickUntil(StringSplit($village_coorHourly[1], "|", 2)[3], "shop")
-				ElseIf isArray(findImage("misc-village-pos3", 50)) Then
-					clickUntil(StringSplit($village_coorHourly[2], "|", 2)[3], "shop")
-				EndIf
+				Local $villagePos = getVillagePos()
+				Switch $villagePos
+					Case 0
+						clickUntil(StringSplit($village_coorHourly[0], "|", 2)[3], "shop")
+					Case 1
+						clickUntil(StringSplit($village_coorHourly[1], "|", 2)[3], "shop")
+					Case 2
+						clickUntil(StringSplit($village_coorHourly[2], "|", 2)[3], "shop")
+					Case Else
+						If _setLog("The Ship is in an unknown position") Then Return -1
+						Return False
+				EndSwitch
 
 				If Not(getLocation() = "shop") Then
 					Local $shadyShop = findImage("misc-shop", 50, 100)
 					If isArray($shadyShop) = True Then clickUntil($shadyShop, "shop")
 				EndIf
+			
 			Case "manage"
 				clickUntil($village_coorMonsters, "monsters")
 				clickUntil($village_coorManage, "manage")
+			
 			Case "monsters"
 				clickUntil($village_coorMonsters, "monsters")
+			
 			Case "quests"
 				clickUntil($village_coorQuests, "quests")
+			
 			;map
 			Case "guardian-dungeons"
 				clickUntil(findImage("map-dungeons", 50), "starstone-dungeons,golem-dungeons")
 				clickUntil($map_coorGuardianDungeons, "guardian-dungeons")
+			
 			Case "golem-dungeons"
 				If setLogReplace("Navigating to golems..", 1) Then Return -1
 
@@ -72,17 +82,26 @@ Func navigate($strMainLocation, $strLocation = "", $forceGiveUp = False)
 
 				;clicking map list and selecting difficulty
 				clickUntil($imgPoint, "golem-dungeons", 3, 3000)
+
+			Case "gold-dungeons"
+				clickUntil(findImage("map-dungeons", 50), "gold-dungeons,starstone-dungeons,golem-dungeons")
+				clickUntil($map_coorGoldDungeons, "gold-dungeons")
+				
 			Case "starstone-dungeons"
 				clickUntil(findImage("map-dungeons", 50), "starstone-dungeons,golem-dungeons")
 				clickUntil($map_coorStarstoneDungeons, "starstone-dungeons")
+				
 			;battle
 			Case "catch-mode"
 				If checkPixel($battle_pixelUnavailable) Then Return False
 				clickUntil($battle_pixelUnavailable, "catch-mode,unknown", 10, 1000)
+			
 			Case ""
 				Return True
+			
 			Case Else
 				MsgBox(0, $botName & " " & $botVersion, "Unknown location.")
+
 		EndSwitch
 
 		Return waitLocation($strLocation)
@@ -119,25 +138,11 @@ Func navigate($strMainLocation, $strLocation = "", $forceGiveUp = False)
 							If waitLocation("village", 5000) Then ExitLoop
 						Case "unknown", "inbox", "shop", "astroleague", "map-stage", "clan", "association", "starstone-dungeons", "map-battle"
 							If checkPixel($game_pixelBack) = True Then clickPoint($game_pixelBack, 3)
-							clickPoint(findImage("misc-close", 30), 3, 100) ;to close any windows open
+							clickUntil(findImage("misc-close", 30), "village", 3, 1000) ;to close any windows open
 						Case Else
 							ControlSend($hWindow, "", "", "{ESC}")
 					EndSwitch
 
-					#cs
-						Local $villagePos = 0
-						If isArray(findImage("misc-village-pos1", 50)) Then
-							$villagePos = 0
-						ElseIf isArray(findImage("misc-village-pos2", 50)) Then
-							$villagePos = 1
-						ElseIf isArray(findImage("misc-village-pos3", 50)) Then
-							$villagePos = 2
-						EndIf
-
-						For $coord In StringSplit($village_coorNezz[$villagePos], "|", 2)
-							clickPoint($coord, 2, 50)
-						Next
-					#ce
 				Case "map"
 					Switch $currLocation
 						Case "battle-end"
@@ -146,17 +151,38 @@ Func navigate($strMainLocation, $strLocation = "", $forceGiveUp = False)
 						Case "village"
 							clickWhile($village_coorPlay, "village")
 							Switch waitLocation("unknown,dialogue", 3000)
-								Case "unknown"
-									If isArray(findImage("misc-close", 100)) = True Then
-										clickPoint(findImage("misc-close", 30), 3, 100) ;to close any windows open
+								Case "unknown"									
+									_Sleep(250)
+									If getLocation() == "bingo-play" Then
+										playBingo()
+										_Sleep(100)
 										clickWhile($village_coorPlay, "village")
 									EndIf
+									
+									If isArray(findImage("misc-close", 100)) = True Then
+										clickUntil(findImage("misc-close", 30), "village", 3, 1000) ;to close any windows open
+										clickWhile($village_coorPlay, "village")
+									EndIf
+									
 								Case "dialogue"
-									clickPoint($game_coorDialogueSkip, 3, 100)
-									If isArray(findImage("misc-close", 100)) = True Then
-										clickPoint(findImage("misc-close", 30), 3, 100) ;to close any windows open
+									clickWhile($game_coorDialogueSkip, "dialogue")
+									_Sleep(100)
+									
+									If getLocation() == "bingo-play" Then
+										playBingo()
+										_Sleep(100)
 										clickWhile($village_coorPlay, "village")
 									EndIf
+									
+									If isArray(findImage("misc-close", 100)) = True Then
+										clickUntil(findImage("misc-close", 30), "village", 3, 1000) ;to close any windows open
+										clickWhile($village_coorPlay, "village")
+									EndIf
+									
+								Case "bingo-play"
+									playBingo()
+									clickWhile($village_coorPlay, "village")
+							
 							EndSwitch
 							If waitLocation("map", 10000) = "map" Then ExitLoop
 						Case "astroleague", "map-battle", "association", "clan"
@@ -175,6 +201,7 @@ Func navigate($strMainLocation, $strLocation = "", $forceGiveUp = False)
 					If Not(waitLocation("battle,battle-auto", 8000)) = "" Then ExitLoop
 				Case Else
 					setLog("Unknown main location: " & $strMainLocation & ".")
+					ExitLoop
 			EndSwitch
 			If _Sleep(100) Then Return -1
 		WEnd

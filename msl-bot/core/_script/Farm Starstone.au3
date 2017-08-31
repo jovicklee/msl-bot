@@ -19,28 +19,35 @@ Func farmStarstoneMain($level, $refillGems, $high, $mid = 0, $low = 0)
 	Local $totHigh = $high
 	Local $totMid = $mid
 	Local $totLow = $low
-
-	setList("High Stones: " & $totHigh-$high  & "/" & $totHigh & "|Mid Stones: " & $totMid-$mid  & "/" & $totMid & "|Low Stones: " & $totLow-$low  & "/" & $totLow & "|Gems used: " & $maxGems-$refillGems & "/" & $maxGems)
-
-	;force navigate to starstone dungeons
-	If setLog("Navigating to Starstone Dungeons.") Then Return -1
-	Local $stuckTimer = TimerInit()
-	While navigate("map", "starstone-dungeons", True) = False
-		If TimerDiff($stuckTimer) > 60000*3 Then
-			If setLog("Could not navigate to starstone dungeons.", 2) Then Return -1
-			Return False
-		EndIf
-	WEnd
+	Local $totEgg = 0
+	
+	_setStarstoneDisplay($high, $totHigh, $mid, $totMid, $low, $totLow, $totEgg)
+	
+	Local $arrayEllipse[3] = [".", "..", "..."]
+	setLogReplace("Enter stone dungeon, waiting...")
 
 	;select level [incomplete]
+	Local $tempCounter = 0
+	Local $tempTimer = TimerInit()
 	While checkLocations("battle,battle-auto") = ""
-		MsgBox($MB_OK, $botName & " " & $botVersion, "Selecting the level for this script is unavailable. Go into your desired starstone level and enter battle and then press OK." & @CRLF & @CRLF & "Not all pixels are available therefore the script might not be able to read the amount of stones. Stage B10 is recommended.")
+		If TimerDiff($tempTimer) > 300000 Then ;5 minutes
+			setLog("Could not detect battle for 5 minutes, stopping script.", 2)
+			Return False
+		EndIf
+
+		setLogReplace("Enter stone dungeon, waiting" & $arrayEllipse[$tempCounter])
+		$tempCounter += 1
+		If $tempCounter > 2 Then $tempCounter = 0
+
+		If _Sleep(1000) Then Return False
+		_setStarstoneDisplay($high, $totHigh, $mid, $totMid, $low, $totLow, $totEgg)
 	WEnd
 
+	setLog("Battle detected, beginning to farm stones.")
 	;grind for starstone
 	While (($high > 0) Or ($mid > 0) Or ($low > 0))
-		setList("High Stones: " & $totHigh-$high  & "/" & $totHigh & "|Mid Stones: " & $totMid-$mid  & "/" & $totMid & "|Low Stones: " & $totLow-$low  & "/" & $totLow & "|Gems used: " & $maxGems-$refillGems & "/" & $maxGems)
-
+		_setStarstoneDisplay($high, $totHigh, $mid, $totMid, $low, $totLow, $totEgg)
+	
 		Local $currLocation = getLocation()
 
 		antiStuck("map")
@@ -67,7 +74,7 @@ Func farmStarstoneMain($level, $refillGems, $high, $mid = 0, $low = 0)
 
 					$refillGems -= 30
 				Else
-					setLog("Gem used exceed max gems!", 0)
+					setLog("Gem used exceed max gems!", 2)
 					ExitLoop
 				EndIf
 			Case "battle-end-exp", "battle-sell", "battle-sell-item"
@@ -85,6 +92,8 @@ Func farmStarstoneMain($level, $refillGems, $high, $mid = 0, $low = 0)
 							Case "HIGH"
 								$high -= $stoneInfo[2]
 						EndSwitch
+					Else
+						$totEgg += 1
 					EndIf
 				EndIf
 			Case "defeat"
@@ -102,6 +111,10 @@ Func farmStarstoneMain($level, $refillGems, $high, $mid = 0, $low = 0)
 		EndSwitch
 	WEnd
 
-	setList("High Stones: " & $totHigh-$high  & "/" & $totHigh & "|Mid Stones: " & $totMid-$mid  & "/" & $totMid & "|Low Stones: " & $totLow-$low  & "/" & $totLow)
+	_setStarstoneDisplay($high, $totHigh, $mid, $totMid, $low, $totLow, $totEgg)
 	Return True
+EndFunc
+
+Func _setStarstoneDisplay($high, $totHigh, $mid, $totMid, $low, $totLow, $totEgg)
+	setList("High Stones: " & $totHigh-$high  & "/" & $totHigh & "|Mid Stones: " & $totMid-$mid  & "/" & $totMid & "|Low Stones: " & $totLow-$low  & "/" & $totLow & "|Eggs: " & $totEgg)
 EndFunc

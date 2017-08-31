@@ -23,7 +23,7 @@ Func enterStage($strImage, $strMode = "normal", $strBonus = "gold", $boolAuto = 
 			If setLogReplace("Entering " & $strMap & "..Swiping", 1) Then Return -1
 			ControlSend($hWindow, "", "", "{LEFT}")
 
-			If TimerDiff($timerStart) > 120000 Then ;two minutes
+			If TimerDiff($timerStart) > 30000 Then ;30 seconds
 				If setLogReplace("Entering " & $strMap & "..Could not find area.", 1) Then Return -1
 				If navigate("village") = True Then
 					Return False
@@ -93,6 +93,13 @@ Func enterStage($strImage, $strMode = "normal", $strBonus = "gold", $boolAuto = 
 		If Not isArray($arrayStage) Then Return -1
 		clickWhile($arrayStage, "map-stage", 5, 2000)
 
+		;check for autorefill off
+		_CaptureRegion()
+		If checkPixel("752,305,0x49B5FF") = False Then
+			clickUntil("720,305", "unknown")
+			clickUntil("403,312", "map-battle")
+		EndIf
+
 		;applying autobattle mode
 		If $boolAuto = True Then
 			If setLogReplace("Entering " & $strMap & "..Autobattle Mode", 1) Then Return -1
@@ -108,6 +115,10 @@ Func enterStage($strImage, $strMode = "normal", $strBonus = "gold", $boolAuto = 
 		clickWhile($map_coorBattle, "map-battle")
 		If Not checkLocations("map-gem-full, battle-gem-full") = "" Then
 			If setLogReplace("Entering " & $strMap & "..Gem box full!", 1) Then Return -1
+			Return False
+		EndIf
+
+		If getLocation() = "refill" Then
 			Return False
 		EndIf
 
