@@ -44,7 +44,7 @@ Func clickPoint($coorPoint, $intNum = 1, $intDuration = 500, $boolRandom = True)
 			ControlClick($hWindow, "", "", "left", 1, $coord[0], $coord[1])
 		EndIf
 
-		setLog("Requested (" & $coorPoint[0] & "," & $coorPoint[1] & "), Clicking (" & $coord[0] & "," & $coord[1] & ")", 1, $LOG_DEBUG)
+		;setLog("Requested (" & $coorPoint[0] & "," & $coorPoint[1] & "), Clicking (" & $coord[0] & "," & $coord[1] & ")", 1, $LOG_DEBUG)
 		
 		If _Sleep($intDuration) Then Return
 	Next
