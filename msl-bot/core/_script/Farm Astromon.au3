@@ -5,22 +5,39 @@
 	Author: GkevinOD (2017)
 #ce
 Func farmAstromon()
-	Local $monster = IniRead($botConfigDir, "Farm Astromon", "image", Null)
-	Local $limit = Int(IniRead($botConfigDir, "Farm Astromon", "limit", 16))
-	Local $catchRares = IniRead($botConfigDir, "Farm Astromon", "catch-rares", 1)
-	Local $finishRound = IniRead($botConfigDir, "Farm Astromon", "finish-round", 0)
+	Local $scriptName = "Farm Astromon"
+
+	Local $monster 		= IniRead($botConfigDir, $scriptName, "astromon", Null)
+	Local $limit 		= IniRead($botConfigDir, $scriptName, "limit", 16)
+	Local $catchRares 	= IniRead($botConfigDir, $scriptName, "catch-rares", 1)
+	Local $finishRound 	= IniRead($botConfigDir, $scriptName, "finish-round", 0)
+	Local $maxGemRefill = IniRead($botConfigDir, $scriptName, "max-spend-gem", 0)
+	
+	$limit = Int($limit)
+	$maxGemRefill = Int($maxGemRefill)
 	
 	
-	;Local $buyEggs = IniRead($botConfigDir, "Farm Astromon", "buy-eggs", 0)
-	;Local $buySoulstones = IniRead($botConfigDir, "Farm Astromon", "buy-soulstones", 0)
-	;Local $maxGoldSpend = IniRead($botConfigDir, "Farm Astromon", "max-gold-spend", 1000000)
-	;
-	;Local $quest = IniRead($botConfigDir, "Farm Astromon", "collect-quest", 1)
-	;Local $hourly = IniRead($botConfigDir, "Farm Astromon", "collect-hourly", 1)
-	;Local $guardian = IniRead($botConfigDir, "Farm Astromon", "guardian-dungeon", 0)
+	Local $buySale 			= IniRead($botConfigDir, $scriptName, "buy-sale", 0)
+	Local $buyEggs 			= IniRead($botConfigDir, $scriptName, "buy-eggs", 0)
+	Local $buySoulstones 	= IniRead($botConfigDir, $scriptName, "buy-soulstones", 0)
+	Local $maxGoldSpend 	= IniRead($botConfigDir, $scriptName, "max-gold-spend", 1000000)
+	
+	Local $shoppingList = [$buySale, $buySoulstones, $buyEggs]
+	
+	Local $quest 	= IniRead($botConfigDir, $scriptName, "collect-quest", 1)
+	Local $hourly 	= IniRead($botConfigDir, $scriptName, "collect-hourly", 1)
+	Local $guardian = IniRead($botConfigDir, $scriptName, "guardian-dungeon", 0)
+	Local $league = IniRead($botConfigDir, $scriptName, "astromon-league", 0)
+	
+	
+	Local $sellGems = IniRead($botConfigDir, $scriptName, "sell-gems-grade", "1,2,3")
+	$sellGems = StringSplit($sellGems, ",", 2)
 
 	setLog("~~~Starting 'Farm Astromon' script~~~", 2)
-	farmAstromonMain($monster, $limit, $catchRares, $finishRound, 0, 1000)
+	Local $gemsUsed = 0
+	Local $goldUsed = 0
+	_farmAstromonMain($monster, $limit, $catchRares, $finishRound, $gemsUsed, $maxGemRefill, $quest, $hourly, $shoppingList, $goldUsed, $maxGoldSpend, $guardian, $league, $sellGems)
+	;farmAstromonMain($monster, $limit, $catchRares, $finishRound, 0, 1000)
 	setLog("~~~Finished 'Farm Astromon' script~~~", 2)
 EndFunc   ;==>farmAstromon
 
@@ -32,6 +49,7 @@ Func farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsUs
 	Local $quest = 1				; TODO: THIS SHOULD BE PASSED IN
 	Local $hourly = 1				; TODO: THIS SHOULD BE PASSED IN
 	Local $guardian = 1				; TODO: THIS SHOULD BE PASSED IN
+	Local $league = 1				; TODO: THIS SHOULD BE PASSED IN
 	Local $sellGems = "1,2,3,4,5"	; TODO: THIS SHOULD BE PASSED IN
 	Local $buySale = 1				; TODO: THIS SHOULD BE PASSED IN
 	Local $buyEggs = 1				; TODO: THIS SHOULD BE PASSED IN
@@ -40,7 +58,7 @@ Func farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsUs
 	Local $maxGoldSpend = 1000000	; TODO: THIS SHOULD BE PASSED IN
 	
 	Local $shoppingList = [$buySale, $buySoulstones, $buyEggs]
-	Return _farmAstromonMain($monster, $limit, $catchRares, $finishRound, $gemsUsed, $maxGemRefill, $quest, $hourly, $shoppingList, $goldSpent, $maxGoldSpend, $guardian, $sellGems)
+	Return _farmAstromonMain($monster, $limit, $catchRares, $finishRound, $gemsUsed, $maxGemRefill, $quest, $hourly, $shoppingList, $goldSpent, $maxGoldSpend, $guardian, $league, $sellGems)
 EndFunc
 
 #cs
@@ -57,10 +75,11 @@ EndFunc
 
 	Author: GkevinOD (2017)
 #ce
-Func _farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsUsed, $maxGemRefill, $quest, $hourly, $shoppingList, $goldSpent, $maxGoldSpend, $guardian, $sellGems)
+Func _farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsUsed, $maxGemRefill, $quest, $hourly, $shoppingList, ByRef $goldSpent, $maxGoldSpend, $guardian, $league, $sellGems)
 	
 	Local $getHourly = False
 	Local $getGuardian = False
+	Local $getLeague = False
 	Local $guardianCount = 0
 	
 	Local $inventoryFull = False	; If the astromon inventory is currently full
@@ -117,7 +136,7 @@ Func _farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsU
 		$listDisplay &= "|Gems Used: " & ($gemsUsed & "/" & $maxGemRefill)
 		If setList($listDisplay) Then Return -1
 	
-		checkTimeTasks($getHourly, $getGuardian, $hourly, $guardian)
+		checkTimeTasks($getHourly, $getGuardian, $getLeague, $hourly, $guardian, $league)
 
 		antiStuck("map")
 		If _Sleep(100) Then ExitLoop
@@ -152,7 +171,7 @@ Func _farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsU
 				EndIf
 				
 				; If Run end of battle checks and then restart
-				If Not doBattleEnd($quest, $getHourly, $shoppingList, $goldSpent, $maxGoldSpend, $getGuardian, $guardianCount, $runCount) Then
+				If Not doBattleEnd($quest, $getHourly, $shoppingList, $goldSpent, $maxGoldSpend, $getGuardian, $guardianCount, $runCount, $getLeague) Then
 					setLog("Unknown error in Battle-End!", 1, $LOG_ERROR)
 				EndIf
 
@@ -171,7 +190,7 @@ Func _farmAstromonMain($monster, $limit, $catchRares, $finishRound, ByRef $gemsU
 				If _Sleep(10) Then Return -1
 									
 				If UBound($catch) = 0 Then
-					if $autoMode <> $AUTO_BATTLE Then $autoMode = $AUTO_ROUND
+					if $autoMode < $AUTO_BATTLE Then $autoMode = $AUTO_ROUND
 					clickPoint($battle_coorAuto)
 					ContinueLoop
 				EndIf	
@@ -286,7 +305,8 @@ Func _farmAstromonFormatCaptureList(ByRef $auto, ByRef $monster, ByRef $rares)
 	; Farm for a custom astromon
 	If IsArray($monster) Then
 		If setLog("Farming " & $monster[$ASTROMON_INFO_NAME] & "(s) at " & $monster[$ASTROMON_INFO_MAP], 1, $LOG_DEBUG) Then Return -1
-		$auto = $AUTO_BATTLE
+		$auto = $monster[$ASTROMON_INFO_NAME] == null ? $AUTO_ALWAYS : $AUTO_BATTLE
+		
 	
 	; Farm for a specific astromon
 	ElseIf IsString($monster) And $monster <> "" Then

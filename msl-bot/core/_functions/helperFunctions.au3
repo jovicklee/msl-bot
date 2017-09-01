@@ -41,12 +41,16 @@ Func goShopping($itemsToBuy, ByRef $goldSpent, $maxGoldSpend = 0)
 	Next
 EndFunc
 
-Func checkTimeTasks(ByRef $doHourly, ByRef $doGuardian, $initHourly = 1, $initGuardian = 1)
+Func checkTimeTasks(ByRef $doHourly, ByRef $doGuardian, ByRef $doLeague, $initHourly = 1, $initGuardian = 1, $initLeague = 1)
 
 	Static Local $hourly = $initHourly
 	Static Local $checkHourly = 1
+	
 	Static Local $guardian = $initGuardian
 	Static Local $checkGuardian = 1
+	
+	Static Local $league = $initLeague
+	Static Local $checkLeague = 1
 	
 	Switch StringSplit(_NowTime(4), ":", 2)[1]
 		Case "00", "01", "02", "03", "04", "05", "06", "07", "08", "09"
@@ -58,9 +62,14 @@ Func checkTimeTasks(ByRef $doHourly, ByRef $doGuardian, $initHourly = 1, $initGu
 				$checkGuardian = False
 				$doGuardian = True
 			EndIf
+			If $league = 1 And $checkLeague = True Then
+				$checkLeague = False
+				$doLeague = True
+			EndIf
 		Case "10" ;to prevent checking twice
 			$checkHourly = True
 			$checkGuardian = True
+			$checkLeague = True
 		Case "30", "31", "32", "33", "34"
 			If $guardian = 1 And $checkGuardian = True Then
 				$checkGuardian = False
@@ -107,7 +116,6 @@ Func doBattle(ByRef $auto, $catchAstromon = False, $exitWhenEmpty = False)
 			While Not(getLocation() == "catch-mode")
 				_Sleep(10)
 				If navigate("battle", "catch-mode") = True Then 
-					$auto = $AUTO_OFF
 					Return True
 				EndIf
 				If TimerDiff($timerStart) > 7000 Then ExitLoop
@@ -173,11 +181,11 @@ Func doAutoBattle(ByRef $roundNumber, ByRef $auto, $selectBoss = 0)
 	Return True
 EndFunc
 
-Func doBattleEnd($doQuest, ByRef $doHourly, $shoppingList, $goldSpent, $maxGold, ByRef $doGuardian, ByRef $guardianCount, ByRef $runCount)
+Func doBattleEnd($doQuest, ByRef $doHourly, $shoppingList, $goldSpent, $maxGold, ByRef $doGuardian, ByRef $guardianCount, ByRef $runCount, $doLeague)
 	Local $success = True
 	
 	Local $questSuccess = doQuest($doQuest)
-	Local $hourlySuccess = doHourly($doHourly, $shoppingList, $goldSpent, $maxGold)
+	Local $hourlySuccess = doHourly($doHourly, $shoppingList, $goldSpent, $maxGold, $doLeague)
 	Local $guardianSuccess = doGuardian($doGuardian, $guardianCount)
 	Local $restartSuccess = restartBattle($runCount)
 	
@@ -191,7 +199,7 @@ Func doQuest($doQuest)
 	Return True
 EndFunc
 
-Func doHourly(ByRef $doHourly, $shoppingList, $goldSpent, $maxGold)
+Func doHourly(ByRef $doHourly, $shoppingList, $goldSpent, $maxGold, $doLeague)
 	; Collect hourly hidden items and check shop
 	If $doHourly = True Then
 		$doHourly = getHourly()
@@ -199,8 +207,7 @@ Func doHourly(ByRef $doHourly, $shoppingList, $goldSpent, $maxGold)
 		$doHourly = False
 
 		goShopping($shoppingList, $goldSpent, $maxGold)
-		playBingoMain()
-		farmPvpMain()
+		If $doLeague Then farmPvpMain()
 	EndIf
 	
 	Return True

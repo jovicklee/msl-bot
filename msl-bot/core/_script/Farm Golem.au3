@@ -11,15 +11,17 @@ Func farmGolem()
 	Local $buyEggs 		 = IniRead($botConfigDir, $scriptName, "buy-eggs", 0)
 	Local $buySoulstones = IniRead($botConfigDir, $scriptName, "buy-soulstones", 1)
 	Local $maxGoldSpend  = IniRead($botConfigDir, $scriptName, "max-gold-spend", 100000)
-	Local $guardian 	 = IniRead($botConfigDir, $scriptName, "farm-guardian", 0)
 	Local $maxGemRefill  = IniRead($botConfigDir, $scriptName, "max-spend-gem", 0)
 	Local $selectBoss 	 = IniRead($botConfigDir, $scriptName, "select-boss", 1)
 	Local $keepAllGrade  = IniRead($botConfigDir, $scriptName, "keep-all-grade", 6)
+	
 	Local $quest 		 = IniRead($botConfigDir, $scriptName, "collect-quest", "1")
 	Local $hourly 		 = IniRead($botConfigDir, $scriptName, "collect-hourly", "1")
+	Local $guardian 	 = IniRead($botConfigDir, $scriptName, "farm-guardian", 0)
+	Local $league	 	 = IniRead($botConfigDir, $scriptName, "astromon-league", 0)
 
 	setLog("~~~Starting 'Farm Golem' script~~~", 2)
-	farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $hourly, $buyEggs, $buySoulstones, $maxGoldSpend)
+	farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $hourly, $buyEggs, $buySoulstones, $maxGoldSpend, $league)
 	setLog("~~~Finished 'Farm Golem' script~~~", 2)
 EndFunc   ;==>farmGolem
 
@@ -41,10 +43,11 @@ EndFunc   ;==>farmGolem
 	guardian: (Int) 1=True; 0=False
 	quest: (Int) 1=True; 0=False
 	hourly: (Int) 1=True; 0=False
+	league: (Int) 1=True; 0=False
 
 	Author: GkevinOD (2017)
 #ce
-Func farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $hourly, $buyEggs, $buySoulstones, $maxGoldSpend)
+Func farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $hourly, $buyEggs, $buySoulstones, $maxGoldSpend, $league)
 	Local $avgGoldPerRound = 0
 	Switch ($strGolem)
 		Case 7
@@ -76,10 +79,11 @@ Func farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $ho
 	Local $intRunCount = 0
 	Local $intTimeElapse = 0
 	Local $numGuardian = 0
-	Local $doGuardian = False
-
-	Local $doHourly = False
 	
+	Local $doHourly = False
+	Local $doGuardian = False
+	Local $doLeague = False
+
 	Local $numEggs = 0 ;keeps count of number of eggs found
 	Local $numGemsKept = 0; keeps count of number of eggs kept
 	
@@ -91,7 +95,7 @@ Func farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $ho
 		If _Sleep(50) Then ExitLoop
 		$intTimeElapse = Int(TimerDiff($intStartTime) / 1000)
 
-		checkTimeTasks($doHourly, $doGuardian, $hourly, $guardian)
+		checkTimeTasks($doHourly, $doGuardian, $doLeague, $hourly, $guardian, $league)
 
 		Local $strData = "Runs: " & $intRunCount & " (Guardian:" & $numGuardian & ")|Profit: " & StringRegExpReplace(String($intGoldPrediction), "(\d)(?=(\d{3})+$)", "$1,") & "|Gems Used: " & ($gemsUsed & "/" & $maxGemRefill) & "|Avg. Time: " & getTimeString(Int($intTimeElapse / $intRunCount)) & "|Eggs: " & $numEggs & "|Gems Kept: " & $numGemsKept
 		setList($strData)
@@ -121,7 +125,7 @@ Func farmGolemMain($strGolem, $selectBoss, $maxGemRefill, $guardian, $quest, $ho
 				
 			Case "battle-end"
 				Local $itemsToBuy = [1, $buySoulstones, $buyEggs]
-				If Not doBattleEnd($quest, $doHourly, $itemsToBuy, $goldSpent, $maxGoldSpend, $doGuardian, $numGuardian, $intRunCount) Then
+				If Not doBattleEnd($quest, $doHourly, $itemsToBuy, $goldSpent, $maxGoldSpend, $doGuardian, $numGuardian, $intRunCount, $doLeague) Then
 					If setLog("Unknown error in Battle-End!", 1, $LOG_ERROR) Then ExitLoop
 					ExitLoop
 				EndIf
